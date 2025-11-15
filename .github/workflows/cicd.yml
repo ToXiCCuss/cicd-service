@@ -20,6 +20,6 @@ jobs:
       - name: Login to docker hub
         run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
       - name: Build docker image
-        run: docker build -t docker.io/toxiccuss/cicd-service:latest.
+        run: docker build . -t docker.io/toxiccuss/cicd-service:latest
       - name: Push docker image
         run: docker push docker.io/toxiccuss/cicd-service:latest
