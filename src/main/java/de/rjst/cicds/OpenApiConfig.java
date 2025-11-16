@@ -14,9 +14,9 @@ public class OpenApiConfig {
         return new OpenAPI()
             .addServersItem(new Server().url("https://cicd.rjst.de"))
             .info(new Info()
-                .title("Customer Service API")
+                .title("CICD Service API")
                 .version("v1")
-                .description("Provides customer data and operations.")
+                .description("CICD Example Service")
             );
     }
 }
