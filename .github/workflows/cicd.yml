@@ -15,11 +15,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '25'
-      - name: Login to docker hub
-        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
-      - name: Lese Maven-Version aus pom.xml
+      - name: Get project name by pom
+        run: echo "PROJECT_NAME=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
+      - name: Get version by pom
         run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Build docker image
-        run: mvn spring-boot:build-image -Dspring-boot.build-image.imageName=docker.io/toxiccuss/cicd-service:${{ env.VERSION }}
+        run: mvn spring-boot:build-image -Dspring-boot.build-image.imageName=docker.io/toxiccuss/${{ env.PROJECT_NAME }}:${{ env.VERSION }}
+      - name: Login to docker hub
+        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
       - name: Push docker image
-        run: docker push docker.io/toxiccuss/cicd-service:${{ env.VERSION }}
+        run: docker push docker.io/toxiccuss/${{ env.PROJECT_NAME }}:${{ env.VERSION }}
