@@ -72,6 +72,27 @@ jobs:
           git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
           git push origin "v${{ inputs.version }}"
 
+      - name: Nächste SNAPSHOT-Version auf develop setzen und pushen
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -e
+          VERSION="${RELEASE_VERSION}"
+          # Pre-Release-Anteil entfernen (z. B. -rc.1)
+          BASE="${VERSION%%-*}"
+          IFS='.' read -r MAJOR MINOR PATCH <<<"$BASE"
+          PATCH=${PATCH:-0}
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_SNAPSHOT="$MAJOR.$MINOR.$NEXT_PATCH-SNAPSHOT"
+          echo "Nächste Snapshot-Version: $NEXT_SNAPSHOT"
+
+          git fetch origin
+          git checkout -B develop origin/develop
+          mvn -B versions:set -DnewVersion=${NEXT_SNAPSHOT} -DgenerateBackupPoms=false
+          git add pom.xml
+          git commit -m "chore(release): set next snapshot version to ${NEXT_SNAPSHOT} on develop"
+          git push origin HEAD:develop
+
       - name: Hinweis
         run: |
           echo "Release-Commit und Tag wurden auf 'master' erstellt. Der Build/Push läuft über .github/workflows/master.yml."
