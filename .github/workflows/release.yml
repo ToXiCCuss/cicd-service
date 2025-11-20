@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cut-release:
+  release:
     name: Set Version + merge develop -> master
     runs-on: ubuntu-latest
     if: github.ref_name == 'develop'
