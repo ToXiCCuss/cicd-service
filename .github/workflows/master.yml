@@ -20,6 +20,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '25'
+          cache: 'maven'
       - name: Get project name by pom
         run: echo "PROJECT_NAME=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
       - name: Get version by pom
