@@ -1,4 +1,4 @@
-name: cut-release
+name: release
 
 on:
   workflow_dispatch:
@@ -19,6 +19,7 @@ jobs:
   cut-release:
     name: Version setzen, mergen, taggen
     runs-on: ubuntu-latest
+    if: github.ref_name == 'develop'
     steps:
       - name: Prüfe, dass Branch "develop" ist
         if: ${{ github.ref_name != 'develop' }}
@@ -30,7 +31,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          # Stelle sicher, dass genau der ausgelöste Ref verwendet wird (z. B. develop)
           ref: ${{ github.ref }}
 
       - name: Set up JDK 25
