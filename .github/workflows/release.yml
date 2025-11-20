@@ -91,8 +91,8 @@ jobs:
 
       - name: Create and push annotated tag on master
         run: |
-          git tag -a "v${{ env.TARGET_VERSION }}" -m "Release v${{ env.TARGET_VERSION }}"
-          git push origin "v${{ env.TARGET_VERSION }}"
+          git tag -a "${{ env.TARGET_VERSION }}" -m "Release ${{ env.TARGET_VERSION }}"
+          git push origin "${{ env.TARGET_VERSION }}"
 
       - name: Set next SNAPSHOT version on develop and push
         env:
