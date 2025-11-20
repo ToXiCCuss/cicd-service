@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Ziel-Version (SemVer, z. B. 1.2.3)'
-        required: true
+        description: 'Ziel-Version (SemVer, z. B. 1.2.3). Leer lassen für auto-detect (pom.xml minus -SNAPSHOT)'
+        required: false
         type: string
 
 permissions:
@@ -39,11 +39,35 @@ jobs:
           distribution: temurin
           java-version: '25'
 
+      - name: Ziel-Version ermitteln
+        id: determine_version
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "Version manuell angegeben: ${{ inputs.version }}"
+            echo "TARGET_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "Keine Version angegeben. Lese aus pom.xml..."
+            CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            echo "Aktuelle Version: $CURRENT_VERSION"
+            
+            if [[ "$CURRENT_VERSION" != *"-SNAPSHOT" ]]; then
+              echo "Fehler: Automatische Ermittlung funktioniert nur bei SNAPSHOT-Versionen. Aktuell: $CURRENT_VERSION" >&2
+              exit 1
+            fi
+            
+            # -SNAPSHOT entfernen
+            NEW_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+            echo "Ermittelte Release-Version: $NEW_VERSION"
+            echo "TARGET_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          fi
+
       - name: Versionseingabe validieren (SemVer)
         shell: bash
         run: |
-          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9.-]+)?$ ]]; then
-            echo "Ungültiges Versionsformat: '${{ inputs.version }}'. Erwartet: 1.2.3 oder 1.2.3-rc.1" >&2
+          # Prüft nun TARGET_VERSION statt inputs.version
+          if [[ ! "${{ env.TARGET_VERSION }}" =~ ^[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "Ungültiges Versionsformat: '${{ env.TARGET_VERSION }}'. Erwartet: 1.2.3 oder 1.2.3-rc.1" >&2
             exit 1
           fi
 
@@ -54,9 +78,9 @@ jobs:
 
       - name: Version im pom.xml auf develop setzen und pushen
         run: |
-          mvn -B versions:set -DnewVersion=${{ inputs.version }} -DgenerateBackupPoms=false
+          mvn -B versions:set -DnewVersion=${{ env.TARGET_VERSION }} -DgenerateBackupPoms=false
           git add pom.xml
-          git commit -m "chore(release): set version to ${{ inputs.version }} on develop"
+          git commit -m "chore(release): set version to ${{ env.TARGET_VERSION }} on develop"
           git push origin HEAD:develop
 
       - name: Merge develop -> master
@@ -69,12 +93,12 @@ jobs:
 
       - name: Annotated Tag auf master erstellen und pushen
         run: |
-          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
-          git push origin "v${{ inputs.version }}"
+          git tag -a "v${{ env.TARGET_VERSION }}" -m "Release v${{ env.TARGET_VERSION }}"
+          git push origin "v${{ env.TARGET_VERSION }}"
 
       - name: Nächste SNAPSHOT-Version auf develop setzen und pushen
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ env.TARGET_VERSION }}
         run: |
           set -e
           VERSION="${RELEASE_VERSION}"
