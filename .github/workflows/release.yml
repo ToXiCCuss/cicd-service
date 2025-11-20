@@ -37,7 +37,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-
       - name: Determine target version
         id: determine_version
         shell: bash
