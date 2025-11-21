@@ -1,9 +1,22 @@
-name: master
+name: build
 
 on:
-  workflow_run:
-    workflows: ["release"]
-    types: [completed]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip unit tests'
+        required: false
+        type: boolean
+        default: true
+      skip_integration_tests:
+        description: 'Skip integration tests'
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches-ignore:
+      - master
+      - develop
 
 concurrency:
   group: ${{ github.ref_name }}
@@ -15,23 +28,40 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-
+      
       - name: Set up JDK 25
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
           distribution: 'temurin'
           java-version: '25'
+      
+      - name: Cache Maven dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      
       - name: Get project name by pom
         run: echo "PROJECT_NAME=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
-
+      
       - name: Get version by pom
         run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-
+      
+      - name: Tests
+        if: ${{ !inputs.skip_tests }}
+        run: mvn test
+      
+      - name: Integration Tests
+        if: ${{ !inputs.skip_integration_tests }}
+        run: mvn failsafe:integration-test && mvn failsafe:verify
+      
       - name: Build docker image
         run: mvn spring-boot:build-image -Dspring-boot.build-image.imageName=docker.io/toxiccuss/${{ env.PROJECT_NAME }}:${{ env.VERSION }}
-
+      
       - name: Login to docker hub
         run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
-
+      
       - name: Push docker image
         run: docker push docker.io/toxiccuss/${{ env.PROJECT_NAME }}:${{ env.VERSION }}
