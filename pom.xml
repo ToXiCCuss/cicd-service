@@ -12,7 +12,7 @@
 
   <groupId>de.rjst</groupId>
   <artifactId>cicd-service</artifactId>
-  <version>1.0.7-SNAPSHOT</version>
+  <version>1.0.7</version>
   <name>cicd-service</name>
   <description>cicd-service</description>
 
