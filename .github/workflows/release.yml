@@ -21,12 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_name == 'develop'
     steps:
-      - name: Check that branch is "develop"
-        if: ${{ github.ref_name != 'develop' }}
-        run: |
-          echo "This workflow must be triggered on the 'develop' branch. Current: ${{ github.ref_name }}" >&2
-          exit 1
-
       - name: Checkout develop
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
@@ -37,6 +31,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+
       - name: Determine target version
         id: determine_version
         shell: bash
